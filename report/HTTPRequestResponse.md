@@ -36,12 +36,12 @@ Accept: text/html
 ```
 
 요청 라인 : GET /index.html HTTP/1.1 (요청 메서드 + 경로 + 프로토콜 버전)
-
 헤더 : Host, User-Agent, Accept 등
-
 바디 : POST/PUT 요청 시 데이터가 포함됨 (예: JSON)
 
-```
+### 📩 Response (응답) 예시
+
+```http
 HTTP/1.1 200 OK
 Content-Type: text/html
 Content-Length: 1234
@@ -50,10 +50,9 @@ Content-Length: 1234
   <body>Hello World</body>
 </html>
 ```
+
 상태 라인 : HTTP/1.1 200 OK (프로토콜 + 상태코드 + 설명)
-
 헤더 : Content-Type, Content-Length 등
-
 바디 : 서버가 반환하는 실제 데이터 (HTML, JSON, 이미지 등)
 
  ## ✅ 장점
