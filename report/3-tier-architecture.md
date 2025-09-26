@@ -1,6 +1,7 @@
 # 🏗️ 3-Tier Architecture
 
 ## 📌 개요
+
 **3-Tier Architecture(3계층 구조)**는 애플리케이션을  
 **① 프레젠테이션 계층 (Presentation Tier)**,  
 **② 비즈니스 로직 계층 (Application/Logic Tier)**,  
