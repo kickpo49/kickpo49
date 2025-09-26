@@ -45,7 +45,8 @@ Accept: text/html
 HTTP/1.1 200 OK
 Content-Type: text/html
 Content-Length: 1234
-
+```
+```html
 <html>
   <body>Hello World</body>
 </html>
