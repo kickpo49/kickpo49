@@ -17,7 +17,7 @@ HTTP 통신은 크게 **요청(Request)** 과 **응답(Response)** 으로 이루
 
 ## 🖼️ HTTP 통신 구조 다이어그램
 <p align="center">
-  <img src="./http-communication.png" alt="HTTP Communication" width="500">
+  <img src="./images/http-communication.png" alt="HTTP Communication" width="500">
 </p>
 
 > 🔎 위 그림은 **클라이언트 → 서버 → 응답** 흐름을 보여줍니다.  
