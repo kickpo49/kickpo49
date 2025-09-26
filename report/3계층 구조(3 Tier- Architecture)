@@ -23,7 +23,7 @@
 ---
 
 ## 🖼️ 구조 다이어그램
-![3-Tier Architecture](https://raw.githubusercontent.com/github/explore/main/topics/architecture/architecture.png)
+![3-Tier Architecture](./3-tier.png)
 
 > 🔎 위 그림은 3계층이 서로 독립적이며 요청(Request)과 응답(Response) 흐름으로 연결되는 것을 보여줍니다.
 
