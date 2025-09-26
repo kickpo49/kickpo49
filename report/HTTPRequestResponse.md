@@ -33,6 +33,7 @@ GET /index.html HTTP/1.1
 Host: www.example.com
 User-Agent: Chrome/120.0
 Accept: text/html
+```
 
 요청 라인 : GET /index.html HTTP/1.1 (요청 메서드 + 경로 + 프로토콜 버전)
 
@@ -40,7 +41,7 @@ Accept: text/html
 
 바디 : POST/PUT 요청 시 데이터가 포함됨 (예: JSON)
 
-
+```
 HTTP/1.1 200 OK
 Content-Type: text/html
 Content-Length: 1234
@@ -48,7 +49,7 @@ Content-Length: 1234
 <html>
   <body>Hello World</body>
 </html>
-
+```
 상태 라인 : HTTP/1.1 200 OK (프로토콜 + 상태코드 + 설명)
 
 헤더 : Content-Type, Content-Length 등
