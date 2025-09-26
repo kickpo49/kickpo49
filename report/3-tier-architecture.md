@@ -30,7 +30,7 @@
 
 ## 🖼️ 구조 다이어그램
 <p align="center">
-  <img src="./3-tier.png" alt="3-Tier Architecture" width="500">
+  <img src="./images/3-tier.png" alt="3-Tier Architecture" width="500">
 </p>
 
 > 🔎 위 그림은 **3계층이 독립적으로 동작**하면서 **요청(Request) → 응답(Response)** 흐름으로 연결되는 것을 보여줍니다.
