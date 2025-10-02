@@ -1,7 +1,8 @@
 // ✅ 문제 1. 문자열 변수 선언
-// 설명: 이름을 저장하는 name이라는 변수를 선언하고, 타입을 지정하세요. 값은 "Alice"로 지정하세요.
-let name: string = "Alice";
-console.log(name);
+// 설명: 이름을 저장하는 named이라는 변수를 선언하고, 타입을 지정하세요. 값은 "Alice"로 지정하세요.
+
+let named: string = "Alice";
+console.log(named);
 
 // ✅ 문제 2. 숫자와 boolean 타입
 // 설명:
@@ -10,7 +11,7 @@ console.log(name);
 // 타입을 지정하고 값을 각각 21, true로 설정하세요.
 let age: number = 21;
 let isStudent: boolean = true;
-
+console.log(age, isStudent);
 
 // ✅ 문제 3. 함수 매개변수와 반환 타입
 // 설명:
