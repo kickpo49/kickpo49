@@ -82,7 +82,7 @@ retry:
   backoff: exponential
 ```
 
-🧱 4. 스키마와 검증(Validation)
+## 🧱 4. 스키마와 검증(Validation)
 
 JSON → JSON Schema: 필드, 타입, enum, 포맷(email, uri) 등 제약 정의
 
@@ -98,14 +98,14 @@ XML은 XSD 기반 계약 관리
 
 YAML 설정은 애플리케이션에서 pydantic / zod 등으로 검증
 
-⚡ 5. 성능 및 용량 비교
+## ⚡ 5. 성능 및 용량 비교
 항목	JSON	XML	YAML
 속도	빠름	중간	느림
 용량 효율	높음	낮음	중간
 파싱 복잡도	낮음	높음	높음
 대용량 적합성	✅	⚠️	❌
 
-💡 추천 가이드:
+**💡 추천 가이드:**
 
 대규모·고빈도 API → JSON
 
