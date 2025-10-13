@@ -50,8 +50,11 @@
   "regions": ["ap-northeast-2", "us-west-2"],
   "retry": { "max": 3, "backoff": "exponential" }
 }
+```
+
 
 ### ✅ XML
+```xml
 <config>
   <service name="payments" version="2" enabled="true">
     <regions>
@@ -64,8 +67,10 @@
     </retry>
   </service>
 </config>
+```
 
 ### ✅ YAML
+```yaml
 service: payments
 version: 2
 enabled: true
@@ -75,7 +80,7 @@ regions:
 retry:
   max: 3
   backoff: exponential
-# 주석 가능
+```
 
 🧱 4. 스키마와 검증(Validation)
 
