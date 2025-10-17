@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>세계 관광지 둘러보기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            background: #f0f0f0;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .attractions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .attraction-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .attraction-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .card-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em;
+        }
+
+        .card-content {
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .card-location {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            height: 250px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6em;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .close-btn:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 세계 관광지 둘러보기</h1>
+
+        <div class="filter-section">
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">전체</button>
+                <button class="filter-btn" data-filter="자연">자연</button>
+                <button class="filter-btn" data-filter="문화">문화유적</button>
+                <button class="filter-btn" data-filter="도시">도시</button>
+                <button class="filter-btn" data-filter="해변">해변</button>
+            </div>
+        </div>
+
+        <div class="attractions-grid" id="attractionsGrid"></div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <div class="modal-header" id="modalIcon"></div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const attractions = [
+            {
+                name: "에펠탑",
+                location: "프랑스 파리",
+                icon: "🗼",
+                description: "1889년 세계 박람회를 위해 건설된 철제 탑으로, 파리의 상징이자 세계에서 가장 유명한 랜드마크 중 하나입니다.",
+                category: "문화",
+                details: "높이 324m의 에펠탑은 매년 약 700만 명의 관광객이 방문합니다. 야간에는 매 시간 정각마다 5분간 반짝이는 조명쇼가 펼쳐집니다."
+            },
+            {
+                name: "그랜드 캐니언",
+                location: "미국 애리조나",
+                icon: "🏔️",
+                description: "콜로라도 강이 수백만 년에 걸쳐 만든 거대한 협곡으로, 지구 지질학의 역사를 한눈에 볼 수 있는 경이로운 자연 유산입니다.",
+                category: "자연",
+                details: "길이 446km, 폭 최대 29km, 깊이 1,800m에 달하는 웅장한 규모를 자랑합니다. 일출과 일몰 시간의 풍경이 특히 아름답습니다."
+            },
+            {
+                name: "타지마할",
+                location: "인도 아그라",
+                icon: "🕌",
+                description: "무굴 제국의 황제 샤 자한이 사랑하는 아내를 위해 지은 대리석 영묘로, 세계에서 가장 아름다운 건축물 중 하나입니다.",
+                category: "문화",
+                details: "1632년부터 22년에 걸쳐 건설되었으며, 2만 명 이상의 장인이 참여했습니다. 유네스코 세계문화유산이자 세계 7대 불가사의 중 하나입니다."
+            },
+            {
+                name: "도쿄",
+                location: "일본",
+                icon: "🏙️",
+                description: "전통과 현대가 완벽하게 조화를 이루는 도시로, 첨단 기술과 고대 문화가 공존하는 매력적인 대도시입니다.",
+                category: "도시",
+                details: "시부야 교차로, 센소지 사원, 도쿄 스카이트리 등 다양한 볼거리가 있으며, 세계 최고 수준의 음식 문화를 경험할 수 있습니다."
+            },
+            {
+                name: "몰디브",
+                location: "인도양",
+                icon: "🏝️",
+                description: "에메랄드빛 바다와 하얀 모래사장으로 유명한 천국 같은 섬나라로, 세계 최고의 리조트와 다이빙 명소입니다.",
+                category: "해변",
+                details: "1,200개 이상의 산호섬으로 이루어져 있으며, 맑고 투명한 바다에서 다양한 해양 생물을 관찰할 수 있습니다."
+            },
+            {
+                name: "마추픽추",
+                location: "페루",
+                icon: "⛰️",
+                description: "잉카 제국의 고대 도시 유적으로, 해발 2,430m 산꼭대기에 위치한 신비로운 문명의 흔적입니다.",
+                category: "문화",
+                details: "15세기에 건설된 것으로 추정되며, 1911년 재발견되었습니다. 정확한 석재 가공 기술과 천문학적 배치가 놀라움을 자아냅니다."
+            },
+            {
+                name: "산토리니",
+                location: "그리스",
+                icon: "🌅",
+                description: "화산 폭발로 형성된 초승달 모양의 섬으로, 하얀 건물과 파란 돔이 아름다운 지중해의 보석입니다.",
+                category: "해변",
+                details: "세계에서 가장 아름다운 일몰을 볼 수 있는 곳으로 유명하며, 독특한 화산토 와인과 신선한 해산물 요리를 즐길 수 있습니다."
+            },
+            {
+                name: "아마존 열대우림",
+                location: "브라질",
+                icon: "🌴",
+                description: "지구의 허파로 불리는 세계 최대의 열대우림으로, 놀라운 생물 다양성의 보고입니다.",
+                category: "자연",
+                details: "세계 산소의 20%를 생산하며, 지구상 생물 종의 10%가 서식하고 있습니다. 4만 종 이상의 식물과 1,300종 이상의 조류가 있습니다."
+            },
+            {
+                name: "뉴욕",
+                location: "미국",
+                icon: "🗽",
+                description: "잠들지 않는 도시로, 세계의 금융과 문화, 예술의 중심지입니다.",
+                category: "도시",
+                details: "자유의 여신상, 타임스퀘어, 센트럴파크, 브로드웨이 등 무수히 많은 명소와 세계 최고 수준의 박물관, 레스토랑이 있습니다."
+            },
+            {
+                name: "경주",
+                location: "대한민국",
+                icon: "🏯",
+                description: "천년 고도 신라의 수도로, 도시 전체가 노천 박물관이라 불릴 만큼 풍부한 문화유산을 간직하고 있습니다.",
+                category: "문화",
+                details: "불국사, 석굴암, 첨성대, 대릉원 등 유네스코 세계문화유산을 포함한 수많은 역사적 유적지가 있습니다."
+            },
+            {
+                name: "노르웨이 피오르",
+                location: "노르웨이",
+                icon: "🛶",
+                description: "빙하가 깎아만든 장엄한 협곡과 폭포, 절벽이 어우러진 북유럽의 절경입니다.",
+                category: "자연",
+                details: "게이랑에르 피오르와 네뢰이 피오르는 유네스코 세계자연유산으로 지정되어 있으며, 크루즈 투어가 인기입니다."
+            },
+            {
+                name: "발리",
+                location: "인도네시아",
+                icon: "🌺",
+                description: "신들의 섬으로 불리는 발리는 아름다운 해변, 사원, 계단식 논이 조화를 이루는 열대 낙원입니다.",
+                category: "해변",
+                details: "우붓의 예술 마을, 탄중 베노아의 수상 스포츠, 울루와투 사원의 전통 춤 공연 등 다양한 경험을 할 수 있습니다."
+            }
+        ];
+
+        let currentFilter = 'all';
+
+        function renderAttractions() {
+            const grid = document.getElementById('attractionsGrid');
+            const filtered = currentFilter === 'all' 
+                ? attractions 
+                : attractions.filter(a => a.category === currentFilter);
+
+            grid.innerHTML = filtered.map((attraction, index) => `
+                <div class="attraction-card" onclick="openModal(${index})">
+                    <div class="card-image">${attraction.icon}</div>
+                    <div class="card-content">
+                        <h2 class="card-title">${attraction.name}</h2>
+                        <div class="card-location">📍 ${attraction.location}</div>
+                        <p class="card-description">${attraction.description}</p>
+                        <div class="card-tags">
+                            <span class="tag">${attraction.category}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openModal(index) {
+            const attraction = attractions[index];
+            const modal = document.getElementById('modal');
+            const modalIcon = document.getElementById('modalIcon');
+            const modalBody = document.getElementById('modalBody');
+
+            modalIcon.textContent = attraction.icon;
+            modalBody.innerHTML = `
+                <h2 style="font-size: 2em; margin-bottom: 10px; color: #333;">${attraction.name}</h2>
+                <div style="color: #667eea; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 5px;">
+                    📍 ${attraction.location}
+                </div>
+                <p style="color: #666; line-height: 1.8; margin-bottom: 20px;">${attraction.description}</p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea;">
+                    <h3 style="color: #333; margin-bottom: 10px;">상세 정보</h3>
+                    <p style="color: #666; line-height: 1.8;">${attraction.details}</p>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.filter;
+                renderAttractions();
+            });
+        });
+
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        renderAttractions();
+    </script>
+</body>
+</html>
