@@ -1,7 +1,7 @@
 # 🌐 HTTP 통신 구조
 
 ## 📌 개요
-**HTTP(HyperText Transfer Protocol)**는 클라이언트와 서버가 데이터를 주고받기 위해 사용하는 통신 규약입니다.  
+**HTTP**(**HyperText Transfer Protocol**)는 클라이언트와 서버가 데이터를 주고받기 위해 사용하는 통신 규약입니다.  
 웹 브라우저, 모바일 앱, API 호출 등 대부분의 웹 서비스는 HTTP 통신을 기반으로 동작합니다.
 
 ---
