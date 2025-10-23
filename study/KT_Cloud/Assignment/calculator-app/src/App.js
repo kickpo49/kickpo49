@@ -89,10 +89,10 @@ function App() {
     }
   };
 
-  const handlePercent = () => {
-    const value = parseFloat(display);
-    setDisplay(String(value / 100));
-  };
+  // const handlePercent = () => {
+  //   const value = parseFloat(display);
+  //   setDisplay(String(value / 100));
+  // };
 
   return (
     <div className="App">
@@ -105,7 +105,7 @@ function App() {
         <div className="buttons">
           <button className="btn function" onClick={clearAll}>C</button>
           <button className="btn function" onClick={handleBackspace}>←</button>
-          <button className="btn function" onClick={handlePercent}>%</button>
+          <button className="btn function" onClick={() => performOperation('%')}>%</button>
           <button className="btn operator" onClick={() => performOperation('/')}>/</button>
 
           <button className="btn number" onClick={() => inputDigit(7)}>7</button>
