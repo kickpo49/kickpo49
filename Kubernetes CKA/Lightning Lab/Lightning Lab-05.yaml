@@ -1,0 +1,187 @@
+A new deployment called alpha-mysql has been deployed in the alpha namespace.
+However, the pods are not running. Troubleshoot and fix the issue.
+The deployment should make use of the persistent volume alpha-pv to be mounted at /var/lib/mysql
+and should use the environment variable MYSQL_ALLOW_EMPTY_PASSWORD=1 to make use of an empty root password.
+
+Important: Do not alter the persistent volume.
+
+# Pod 상태 확인
+kubectl -n alpha get pods
+
+# 문제가 발생한 Pod 상세 확인
+kubectl -n alpha describe pod -l app=alpha-mysql
+Events 출력
+Warning  FailedScheduling  47s (x3 over 10m)  default-scheduler  0/2 nodes are available: persistentvolumeclaim "mysql-alpha-pvc" not found.
+preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+
+# Deployment 이벤트 확인
+kubectl -n alpha describe deploy alpha-mysql
+
+
+# PV 확인 > alpha-pv, CAPACITY 1Gi, ACCESS MODES RWO=ReadWriteOnce
+k get pv
+NAME       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+alpha-pv   1Gi        RWO            Retain           Available           slow           <unset>                          5m9s
+
+# PVC 확인 > alpha-claim, storageclass slow-storage
+kubectl -n alpha get pvc
+NAME          STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+alpha-claim   Pending                                      slow-storage   <unset>                 18m
+
+# storageclass 확인 > slow
+kubectl get storageclass
+=k get sc
+NAME   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+slow   kubernetes.io/no-provisioner   Delete          WaitForFirstConsumer   false                  2m3s
+
+# 기존 alpha-claim 가져온 후 PVC 수정
+kubectl -n alpha get pvc alpha-claim -o yaml > alpha-claim-pvc.yaml
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"alpha-clai>
+  creationTimestamp: "2025-11-25T08:14:56Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: alpha-claim
+  namespace: alpha
+  resourceVersion: "2190"
+  uid: f7a4441e-5328-4fa3-95b0-099432cef0b0
+spec:
+  accessModes:
+  - #ReadWriteMany > ReadWrtieOnce
+  resources:
+    requests:
+      #storage: 2Gi > 1Gi
+  #storageClassName: slow-storage > slow 수정
+  volumeMode: Filesystem
+status:
+  phase: Pending
+
+
+# 위 내용 참고해서 아래와 같이 작성
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: alpha-claim
+  namespace: alpha
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: slow
+
+
+Kubernetes에서 PVC가 요청하는 용량 ≤ PV 용량 이어야만 바인딩이 가능해.
+PVC가 2Gi를 달라고 함
+PV는 1Gi밖에 없음
+→ “요구사항을 만족하는 PV 없음”이라 판단하고 Bound가 안 됨 (계속 Pending)
+
+# 기존 alpha-claim (PVC) 삭제
+kubectl delete pvc alpha-claim -n alpha
+
+# 수정한 alpha-claim-pvc.yaml 적용
+kubectl apply -f alpha-claim-pvc.yaml
+
+# PVC 상태 확인:
+kubectl get pvc -n alpha
+# STATUS 가 Bound 여야 정상
+
+
+# 현재 Deployment 파일 가져오기:
+kubectl -n alpha get deploy alpha-mysql -o yaml > alpha-mysql.yaml
+
+# claimName: mysql-alpha-pvc 을 alpha-claim으로 수정
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"creationTimestamp":null>
+  creationTimestamp: "2025-11-25T08:14:56Z"
+  generation: 1
+  labels:
+    app: alpha-mysql
+  name: alpha-mysql
+  namespace: alpha
+  resourceVersion: "3241"
+  uid: 8e1dcd71-c770-44ef-9071-dd2f067e390c
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: alpha-mysql
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: alpha-mysql
+    spec:
+      containers:
+      - env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          #value: "1"
+        image: mysql:5.6
+        imagePullPolicy: Always
+        name: mysql
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - #mountPath: /var/lib/mysql
+          name: mysql-data
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: mysql-data
+        persistentVolumeClaim:
+          #claimName: mysql-alpha-pvc > alpha-claim 수정
+status:
+  conditions:
+  - lastTransitionTime: "2025-11-25T08:14:56Z"
+    lastUpdateTime: "2025-11-25T08:14:56Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  - lastTransitionTime: "2025-11-25T08:24:57Z"
+    lastUpdateTime: "2025-11-25T08:24:57Z"
+    message: ReplicaSet "alpha-mysql-85765c4c56" has timed out progressing.
+    reason: ProgressDeadlineExceeded
+    status: "False"
+    type: Progressing
+  observedGeneration: 1
+  replicas: 1
+  unavailableReplicas: 1
+  updatedReplicas: 1
+
+# 만든 alpha-mysql.yaml 적용
+kubectl apply -f alpha-mysql.yaml
+
+
+
+alpha-claim PVC는 slow-storage StorageClass를 이용해서 동적 프로비저닝을 하려고 하는데
+
+클러스터에 slow-storage라는 StorageClass가 아예 없어서
+
+PVC가 Pending 상태에서 PV에 묶이지 못하고 있음 → 그래서 Pod도 스케줄링이 안 되는 상태입니다.
