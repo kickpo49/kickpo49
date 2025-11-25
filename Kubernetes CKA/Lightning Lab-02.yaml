@@ -1,0 +1,35 @@
+Print the names of all deployments in the admin2406 namespace in the following format:
+DEPLOYMENT CONTAINER_IMAGE READY_REPLICAS NAMESPACE
+<deployment name> <container image used> <ready replica count> <Namespace>
+
+The data should be sorted by the increasing order of the deployment name.
+Example:
+DEPLOYMENT CONTAINER_IMAGE READY_REPLICAS NAMESPACE
+deploy0    nginx:alpine      1      admin2406 
+Write the result to the file /opt/admin2406_data.
+
+(
+  echo "DEPLOYMENT   CONTAINER_IMAGE   READY_REPLICAS   NAMESPACE"
+  kubectl get deploy -n admin2406 -o json \
+    | jq -r '.items[]
+      | "\(.metadata.name)   \(.spec.template.spec.containers[0].image)   \(.status.readyReplicas // 0)   \(.metadata.namespace)"' \
+    | sort
+) > /opt/admin2406_data
+
+jq 를 사용하여 필요한 필드만 추출
+
+.metadata.name → Deployment 이름
+
+.spec.template.spec.containers[0].image → 첫 번째 container image
+
+.status.readyReplicas // 0 → ready replica 수 (없으면 0)
+
+.metadata.namespace → 네임스페이스
+
+
+{
+  echo "DEPLOYMENT   CONTAINER_IMAGE   READY_REPLICAS   NAMESPACE"
+  kubectl get deploy -n admin2406 -o jsonpath='{range .items[*]}{.metadata.name}{"   "}{.spec.template.spec.containers[0].image}{"   "}{.status.readyReplicas}{"   "}{.metadata.namespace}{"\n"}{end}' \
+    | sort
+} > /opt/admin2406_data
+

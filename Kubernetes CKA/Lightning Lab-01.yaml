@@ -1,0 +1,149 @@
+1. 문제
+Upgrade the current version of kubernetes from 1.33.0 to 1.34.0 exactly using the kubeadm utility. Make sure that the upgrade is carried out one node at a time starting with the controlplane node. To minimize downtime, the deployment gold-nginx should be rescheduled on an alternate node before upgrading each node.
+kubeadm 유틸리티를 사용하여 현재 버전의 kubernetes를 1.33.0에서 1.34.0으로 정확히 업그레이드합니다. 컨트롤 플레인 노드부터 한 번에 한 노드씩 업그레이드가 수행되는지 확인합니다. 다운타임을 최소화하려면 각 노드를 업그레이드하기 전에 대체 노드에서 배포 gold-nginx를 다시 예약해야 합니다.
+
+Upgrade controlplane node first and drain node node01 before upgrading it. Pods for gold-nginx should run on the controlplane node subsequently.
+node01을 업그레이드 하기 전에 먼저 컨트롤플레인 노드를 drain node하고 업그레이드하세요. 이후 컨트롤플레인 노드에서 gold-nginx용 pod를 실행해야 합니다.
+
+1. controlplane 업그레이드 (gold-nginx → node01)
+
+모든 명령은 별도 표시가 없으면 controlplane에서 실행
+
+# (선택) 현재 gold-nginx / 노드 상태 확인
+kubectl get deploy gold-nginx
+kubectl get pods -o wide
+kubectl get nodes
+
+1-1) controlplane drain: gold-nginx를 node01로 이동
+# controlplane을 drain 해서, gold-nginx가 node01에서 동작하도록 강제
+kubectl drain controlplane --ignore-daemonsets --delete-emptydir-data
+
+1-2) controlplane: Kubernetes apt 리포지토리 v1.34로 변경
+# (선택) 현재 리포지토리 확인
+ls /etc/apt/sources.list.d
+cat /etc/apt/sources.list.d/kubernetes.list
+# 예: deb ... stable:/v1.33/deb/ /
+
+# v1.33 → v1.34로 변경
+sudo sed -i 's/v1.33/v1.34/g' /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+
+# 설치 가능한 kubeadm 버전 확인 (정확 버전 문자열 확보)
+apt-cache madison kubeadm
+# 예: 1.34.0-1.1 이 보인다고 가정
+
+1-3) controlplane: kubeadm 업그레이드
+# kubeadm hold 해제 후 1.34.0으로 업그레이드
+sudo apt-mark unhold kubeadm
+sudo apt-get install -y kubeadm=1.34.0-1.1   # 실제 madison 결과에 맞게 버전 지정
+sudo apt-mark hold kubeadm
+
+# kubeadm 버전 확인
+kubeadm version
+
+1-4) controlplane: 클러스터 업그레이드 수행
+# (선택) 업그레이드 계획 확인
+sudo kubeadm upgrade plan
+
+# 실제 controlplane 업그레이드 수행 (정확히 v1.34.0)
+sudo kubeadm upgrade apply v1.34.0
+
+1-5) controlplane: kubelet / kubectl 업그레이드
+# kubelet / kubectl hold 해제
+sudo apt-mark unhold kubelet kubectl
+
+# kubelet / kubectl 1.34.0으로 업그레이드
+sudo apt-get install -y kubelet=1.34.0-1.1 kubectl=1.34.0-1.1
+
+# 다시 hold 설정(버전 고정)
+sudo apt-mark hold kubelet kubectl
+
+# kubelet 재시작
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+
+# (선택) 버전 확인
+kubelet --version
+kubectl version --client
+
+1-6) controlplane 스케줄링 재개
+# controlplane 노드 스케줄링 허용
+kubectl uncordon controlplane
+
+# 노드 상태/버전 확인
+kubectl get nodes
+
+
+이 시점:
+
+controlplane: v1.34.0
+
+node01: v1.33.0
+
+gold-nginx: node01에서 동작 중 (drain controlplane의 결과)
+
+2. node01 업그레이드 (gold-nginx → controlplane)
+
+이제 node01을 drain 해서 gold-nginx를 controlplane으로 옮기고, node01을 업그레이드합니다.
+
+2-1) node01 drain: gold-nginx를 controlplane으로 이동
+# node01을 drain 해서 gold-nginx가 controlplane에서 동작하도록 강제
+kubectl drain node01 --ignore-daemonsets --delete-emptydir-data
+
+# (선택) gold-nginx Pod가 controlplane에 올라왔는지 확인
+kubectl get pods -o wide -l app=gold-nginx
+
+
+요구사항: “Pods for gold-nginx should run on the controlplane node subsequently.”
+→ 이 단계에서 gold-nginx가 controlplane에서 돌아가게 됨 ✅
+
+2-2) node01에 SSH 접속
+ssh node01
+
+2-3) node01: Kubernetes apt 리포지토리 v1.34로 변경
+# node01에서도 v1.33 → v1.34로 변경
+sudo sed -i 's/v1.33/v1.34/g' /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+
+# 설치 가능한 kubeadm 버전 확인
+apt-cache madison kubeadm      # 예: 1.34.0-1.1
+
+2-4) node01: kubeadm 업그레이드
+sudo apt-mark unhold kubeadm
+sudo apt-get install -y kubeadm=1.34.0-1.1
+sudo apt-mark hold kubeadm
+
+2-5) node01: kubeadm node 업그레이드 수행
+# worker 노드 업그레이드
+sudo kubeadm upgrade node
+
+2-6) node01: kubelet / kubectl 업그레이드
+# kubelet / kubectl hold 해제
+sudo apt-mark unhold kubelet kubectl
+
+# kubelet / kubectl 1.34.0으로 업그레이드
+sudo apt-get install -y kubelet=1.34.0-1.1 kubectl=1.34.0-1.1
+
+# 다시 hold 설정
+sudo apt-mark hold kubelet kubectl
+
+# kubelet 재시작 및 상태 확인
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+sudo systemctl status kubelet --no-pager
+
+# (선택) 버전 확인
+kubelet --version
+kubectl version --client --short
+
+exit   # controlplane로 복귀
+
+2-7) controlplane에서 node01 스케줄링 재개 및 최종 확인
+# node01 스케줄링 허용
+kubectl uncordon node01
+
+# 전체 노드 버전 상태 확인 (모두 v1.34.0이어야 함)
+kubectl get nodes
+
+# gold-nginx가 controlplane에서 동작하는지 최종 확인
+kubectl get pods -o wide -l app=gold-nginx
