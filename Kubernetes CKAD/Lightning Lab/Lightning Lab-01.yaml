@@ -1,0 +1,76 @@
+# PV YAML
+vi pv.yaml
+
+# PersistentVolume
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: log-volume
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  storageClassName: manual
+  hostPath:
+    path: /opt/volume/nginx
+
+# Apply
+k apply -f pv.yaml
+
+# PVC YAML
+vi pvc.yaml
+
+# PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: log-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Mi
+
+# Apply
+k apply -f pvc.yaml
+
+
+# POD YAML
+vi logger-pod.yaml
+
+# Pod
+apiVersion: v1
+kind: Pod
+metadata:
+  name: logger
+spec:
+  containers:
+  - name: nginx
+    image: nginx:alpine
+    volumeMounts:
+    - name: log-storage
+      mountPath: /var/www/nginx
+  volumes:
+  - name: log-storage
+    persistentVolumeClaim:
+      claimName: log-claim
+
+# Apply
+k apply -f logger-pod.yaml
+
+
+# Check PV status
+kubectl get pv log-volume
+
+# Check PVC status and binding
+kubectl get pvc log-claim
+
+# Check pod status
+kubectl get pod logger
+
+# Verify the mount inside the pod
+kubectl exec logger -- df -h | grep nginx

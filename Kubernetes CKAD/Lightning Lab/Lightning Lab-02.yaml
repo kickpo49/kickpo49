@@ -1,0 +1,100 @@
+# secure-pod 파드 정보
+kubectl get pod secure-pod --show-labels
+
+secure-pod:
+  IP: 172.17.0.9
+  Labels: run=secure-pod
+
+# webapp-color 파드 정보  
+kubectl get pod webapp-color --show-labels
+
+webapp-color:
+  IP: 172.17.0.6
+  Labels: name=webapp-color  # 주의: 'name=' 레이블 사용
+
+# 기존 서비스 정보
+secure-service:
+  ClusterIP: 172.20.146.52
+  Port: 80
+  Selector: run=secure-pod  # secure-pod를 타겟팅
+
+# 기존 NetworkPolicy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  creationTimestamp: "2025-12-02T13:31:51Z"
+  generation: 1
+  name: default-deny
+  namespace: default
+  resourceVersion: "1670"
+  uid: 3188d715-15fb-4d70-84bb-a6db16c2389c
+spec:
+  podSelector: {} # 모든 파드에 적용
+  policyTypes:
+  - Ingress     # 규칙 없음 = 모든 ingress 차단
+
+
+# 2. 문제의 원인
+# default-deny NetworkPolicy가 모든 파드로의 들어오는(ingress) 트래픽을 차단하고 있습니다.
+
+# ❌ webapp-color → secure-pod: 차단됨
+# ❌ 외부 → secure-pod: 차단됨
+# ❌ 모든 파드 → 모든 파드: 차단됨
+
+# default-deny를 삭제하지 않고, 예외 규칙을 추가하는 방식:
+
+kubectl apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-webapp-to-secure
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      run: secure-pod
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          name: webapp-color
+    ports:
+    - protocol: TCP
+      port: 80
+  egress:
+  - {}
+EOF
+
+# 모든 NetworkPolicy 조회
+kubectl get networkpolicies -n default
+
+# webapp-color에서 secure-service로 HTTP 요청
+kubectl exec webapp-color -n default -- wget -O- --timeout=5 http://secure-service:80
+
+webapp-color (172.17.0.6)
+Labels: name=webapp-color
+    |
+    | HTTP GET http://secure-service:80
+    ↓
+secure-service (172.20.146.52:80)
+    |
+    | 서비스가 파드로 라우팅
+    ↓
+NetworkPolicy 평가:
+  ✅ default-deny: 차단하려 함
+  ✅ allow-webapp-to-secure: 허용 (이것이 우선)
+  → 결과: 허용!
+    |
+    ↓
+secure-pod (172.17.0.9:80)
+Labels: run=secure-pod
+    |
+    | HTTP 200 OK 응답
+    ↓
+✅ egress: {} 규칙으로 응답 허용
+    |
+    ↓
+webapp-color (172.17.0.6)
