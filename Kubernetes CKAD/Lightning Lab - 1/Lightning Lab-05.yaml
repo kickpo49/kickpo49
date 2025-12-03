@@ -1,0 +1,56 @@
+# Deploy the Redis Deployment
+vi redis-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: "200m"
+        volumeMounts:
+        - name: data
+          mountPath: /redis-master-data
+        - name: redis-config
+          mountPath: /redis-master
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: redis-config
+        configMap:
+          name: redis-config
+
+# Create the Redis Deployment
+kubectl apply -f redis-deployment.yaml
+
+# Check deployment status
+kubectl get deployment redis
+
+# Check pod status
+kubectl get pods -l app=redis
+
+# Verify the pod configuration
+kubectl describe pod -l app=redis
+
+# Check if volumes are mounted correctly
+kubectl exec -it <redis-pod-name> -- ls -la /redis-master-data
+kubectl exec -it <redis-pod-name> -- ls -la /redis-master
+
+# Verify CPU requests
+kubectl describe pod -l app=redis | grep -A 5 "Requests"

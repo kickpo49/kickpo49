@@ -1,0 +1,53 @@
+# Create a new Deployment called nginx-deploy 
+vi nginx-deploy.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.16
+        ports:
+        - containerPort: 80
+
+# Create the Deployment
+kubectl apply -f nginx-deploy.yaml
+
+# Verify the deployment:
+kubectl get deployment nginx-deploy
+kubectl get pods -l app=nginx
+
+# Step 2: Upgrade to Version 1.17
+kubectl set image deployment/nginx-deploy nginx=nginx:1.17
+
+# Watch the rollout status
+kubectl rollout status deployment/nginx-deploy
+
+# Verify all pods are updated:
+kubectl describe deployment nginx-deploy | grep Image
+
+# Step 3: Rollback to Previous Version
+kubectl rollout undo deployment/nginx-deploy
+
+# Monitor the rollback:
+kubectl rollout status deployment/nginx-deploy
+
+# 특정 Revision 상세 정보 확인
+# revision 2의 상세 정보 확인
+kubectl rollout history deployment/nginx-deploy --revision=2
