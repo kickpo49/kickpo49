@@ -12,6 +12,9 @@ metadata:
 data:
   TIME_FREQ: "10"
 
+# Other way to create ConfigMap
+kubectl create cm time-config -n dvl1987 --from-literal=TIME_FREQ=10
+
 # Apply ConfigMap
 kubectl apply -f cm.yaml
 
