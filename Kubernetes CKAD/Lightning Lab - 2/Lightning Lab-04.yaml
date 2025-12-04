@@ -1,0 +1,40 @@
+# 모든 서비스 확인
+kubectl get svc --all-namespaces
+ 
+# NAMESPACE       NAME                                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+# ingress-nginx   ingress-nginx-controller             NodePort    172.20.187.127   <none>        80:30093/TCP,443:30863/TCP   11m
+
+# Create a single ingress resource
+vi ingress-vh-routing.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-vh-routing
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: watch.ecom-store.com
+    http:
+      paths:
+      - path: /video
+        pathType: Prefix
+        backend:
+          service:
+            name: video-service
+            port:
+              number: 8080
+  - host: apparels.ecom-store.com
+    http:
+      paths:
+      - path: /wear
+        pathType: Prefix
+        backend:
+          service:
+            name: apparels-service
+            port:
+              number: 8080
+
+# To apply this resource:
+kubectl apply -f ingress-vh-routing.yaml

@@ -1,0 +1,29 @@
+vi my-busybox.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox
+  namespace: dev2406
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: controlplane
+  containers:
+  - name: secret
+    image: busybox
+    command: ["sleep", "3600"]
+    volumeMounts:
+    - name: secret-volume
+      mountPath: /etc/secret-volume
+      readOnly: true
+  volumes:
+  - name: secret-volume
+    secret:
+      secretName: dotfile-secret
+
+# To apply this manifest:
+kubectl apply -f my-busybox.yaml
+
+# To verify the pod:
+kubectl get pod my-busybox -n dev2406
+kubectl describe pod my-busybox -n dev2406
