@@ -1,0 +1,133 @@
+# Namespace 확인
+k get ns
+
+# 모든 Pod 확인
+k get pods -A
+
+# identify the pod which is not in a Ready state
+k describe pod nginx1401 -n dev1401
+
+
+Name:             nginx1401
+Namespace:        dev1401
+Priority:         0
+Service Account:  default
+Node:             node01/192.168.129.197
+Start Time:       Thu, 04 Dec 2025 02:39:25 +0000
+Labels:           run=nginx
+Annotations:      cni.projectcalico.org/containerID: 53f2c48e79e9d6a77f9fb88eba25439df7318940d8877cf6fc3d74781e6df215
+                  cni.projectcalico.org/podIP: 172.17.1.2/32
+                  cni.projectcalico.org/podIPs: 172.17.1.2/32
+Status:           Running
+IP:               172.17.1.2
+IPs:
+  IP:  172.17.1.2
+Containers:
+  nginx:
+    Container ID:   containerd://a4c3c01f12d95a31ed8e24b6895cfd38e862afe73220919a5a5d6b00e8947875
+    Image:          kodekloud/nginx
+    Image ID:       docker.io/kodekloud/nginx@sha256:2862900861517dfaf9e0ed0f4fa199744a7410f4f78520866031c725c386bb5e
+    Port:           9080/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Thu, 04 Dec 2025 02:39:33 +0000
+    Ready:          False
+    Restart Count:  0
+    Readiness:      http-get http://:8080/ delay=0s timeout=1s period=10s #success=1 #failure=3
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-gsf7x (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-gsf7x:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                   From               Message
+  ----     ------     ----                  ----               -------
+  Normal   Scheduled  4m24s                 default-scheduler  Successfully assigned dev1401/nginx1401 to node01
+  Normal   Pulling    4m22s                 kubelet            Pulling image "kodekloud/nginx"
+  Normal   Pulled     4m17s                 kubelet            Successfully pulled image "kodekloud/nginx" in 4.816s (4.816s including waiting). Image size: 50986074 bytes.
+  Normal   Created    4m17s                 kubelet            Created container: nginx
+  Normal   Started    4m16s                 kubelet            Started container nginx
+  Warning  Unhealthy  36s (x25 over 4m16s)  kubelet            Readiness probe failed: Get "http://172.17.1.2:8080/": dial tcp 172.17.1.2:8080: connect: connection refused
+
+
+# The pod nginx1401 is not ready because the readiness probe is failing.
+# The probe is checking port 8080, but the container is actually exposing port 9080.
+
+# Get nginx1401 YAML File
+kubectl get pod nginx1401 -n dev1401 -o yaml > nginx1401.yaml
+
+# Delete the existing pod
+kubectl delete pod nginx1401 -n dev1401
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: nginx
+  name: nginx1401
+  namespace: dev1401
+spec:
+  containers:
+  - image: kodekloud/nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 9080
+      protocol: TCP
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /
+        port: 9080          # 8080에서 9080으로 수정
+        scheme: HTTP
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+    livenessProbe:          # 새로 추가된 liveness probe
+      exec:
+        command:
+        - ls
+        - /var/www/html/file_check
+      initialDelaySeconds: 10
+      periodSeconds: 60
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: OnFailure
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+
+# 컨테이너가 실제로 9080 포트를 사용하므로, readiness probe도 동일한 포트를 체크해야 합니다.
+
+# 수정된 YAML 파일로 pod 재생성
+kubectl apply -f nginx1401.yaml
+
+# Pod가 Ready 상태인지 확인
+kubectl get pod nginx1401 -n dev1401
+
+# Probe가 제대로 설정되었는지 확인
+kubectl describe pod nginx1401 -n dev1401 | grep -A 10 "Liveness\|Readiness"

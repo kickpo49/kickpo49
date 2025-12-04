@@ -1,0 +1,29 @@
+vi dice-cronjob.yaml
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dice
+spec:
+  schedule: "*/1 * * * *"  # Every one minute
+  jobTemplate:
+    spec:
+      completions: 1  # Complete the task once
+      parallelism: 1  # Non-parallel
+      backoffLimit: 25  # Maximum retry attempts
+      activeDeadlineSeconds: 20  # Job fails if not completed within 20 seconds
+      template:
+        spec:
+          containers:
+          - name: throw-dice
+            image: throw-dice
+          restartPolicy: Never
+
+# To apply this CronJob:
+kubectl apply -f dice-cronjob.yaml
+
+# To verify the CronJob was created:
+kubectl get cronjob dice
+
+# To monitor the jobs created by the CronJob:
+kubectl get jobs --watch
