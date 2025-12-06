@@ -1,0 +1,282 @@
+#1 Create a deployment called my-webapp with image: nginx, label tier:frontend and 2 replicas.
+# Expose the deployment as a NodePort service with name front-end-service , port: 80 and NodePort: 30083
+vi my-webapp-deployment.yaml
+
+# Create Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-webapp
+  labels:
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+
+kubectl apply -f my-webapp-deployment.yaml
+
+# Create NodePort Service
+vi front-end-service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-end-service
+spec:
+  type: NodePort
+  selector:
+    tier: frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30083
+
+kubectl apply -f front-end-service.yaml
+
+#2 Add a taint to the node node01 of the cluster. Use the specification below:
+key: app_type, value: alpha and effect: NoSchedule
+Create a pod called alpha, image: redis with toleration to node01
+
+# Add taint to node01
+kubectl taint nodes node01 app_type=alpha:NoSchedule
+
+# Create the alpha pod
+vi alpha-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: alpha
+spec:
+  containers:
+  - name: redis
+    image: redis
+  tolerations:
+  - key: "app_type"
+    operator: "Equal"
+    value: "alpha"
+    effect: "NoSchedule"
+
+kubectl apply -f alpha-pod.yaml
+
+#3 Apply a label app_type=beta to node controlplane.
+Create a new deployment called beta-apps with image: nginx and replicas: 3
+Set Node Affinity to the deployment to place the PODs on controlplane only
+NodeAffinity: requiredDuringSchedulingIgnoredDuringExecution
+
+# Apply label to controlplane node
+kubectl label node controlplane app_type=beta
+
+# Apply the deployment
+vi beta-apps-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beta-apps
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: beta-apps
+  template:
+    metadata:
+      labels:
+        app: beta-apps
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: app_type
+                operator: In
+                values:
+                - beta
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+
+kubectl create -f beta-apps-deployment.yaml
+
+#4 Create a new Ingress Resource for the service my-video-service to be made available at the URL: http://ckad-mock-exam-solution.com:30093/video.
+To create an ingress resource, the following details are: -
+annotation: nginx.ingress.kubernetes.io/rewrite-target: /
+host: ckad-mock-exam-solution.com
+path: /video
+Once set up, the curl test of the URL from the nodes should be successful: HTTP 200
+
+vi my-video-service.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: video-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: ckad-mock-exam-solution.com
+    http:
+      paths:
+      - path: /video
+        pathType: Prefix
+        backend:
+          service:
+            name: my-video-service
+            port:
+              number: 8080
+
+kubectl apply -f my-video-service.yaml
+
+# accessible 확인
+curl http://ckad-mock-exam-solution.com:30093/video -v
+
+#5 We have deployed a new pod called pod-with-rprobe. This Pod has an initial delay before it is Ready.
+Update the newly created pod pod-with-rprobe with a readinessProbe using the given spec
+httpGet path: /ready
+httpGet port: 8080
+
+kubectl get pod pod-with-rprobe -o yaml > pod-with-rprobe.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-rprobe
+spec:
+  containers:
+  - name: <container-name>  # Keep the existing container name
+    image: <existing-image>   # Keep the existing image
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8080
+
+kubectl replace -f pod-with-rprobe.yaml --force
+
+#6 Create a new pod called nginx1401 in the default namespace with the image nginx.
+Add a livenessProbe to the container to restart it if the command ls /var/www/html/probe fails.
+This check should start after a delay of 10 seconds and run every 60 seconds
+
+vi nginx1401-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx1401
+  namespace: default
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    livenessProbe:
+      exec:
+        command:
+        - ls
+        - /var/www/html/probe
+      initialDelaySeconds: 10
+      periodSeconds: 60
+
+kubectl apply -f nginx1401-pod.yaml
+
+
+#7 Create a job called whalesay with image busybox and command echo "cowsay I am going to ace CKAD!"
+completions: 10
+backoffLimit: 6
+restartPolicy: Never
+
+vi whalesay-job.yaml
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: whalesay
+spec:
+  completions: 10
+  backoffLimit: 6
+  template:
+    spec:
+      containers:
+      - name: whalesay
+        image: busybox
+        command: ["echo", "cowsay I am going to ace CKAD!"]
+      restartPolicy: Never
+
+kubectl apply -f whalesay-job.yaml
+
+kubectl get jobs
+
+#8 Create a pod called multi-pod with two containers.
+
+Container 1:
+name: jupiter, image: nginx
+
+Container 2:
+name: europa, image: busybox
+command: sleep 4800
+
+Environment Variables:
+
+Container 1:
+
+type: planet
+
+Container 2:
+
+type: moon
+
+vi multi-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-pod
+spec:
+  containers:
+  - name: jupiter
+    image: nginx
+    env:
+    - name: type
+      value: planet
+  - name: europa
+    image: busybox
+    command: ["sleep", "4800"]
+    env:
+    - name: type
+      value: moon
+
+kubectl apply -f multi-pod.yaml
+
+#9 Create a PersistentVolume called custom-volume with size: 50MiB reclaim policy:retain, Access Modes: ReadWriteMany and hostPath: /opt/data
+
+vi custom-volume-pv.yaml
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: custom-volume
+spec:
+  capacity:
+    storage: 50Mi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /opt/data
+
+kubectl apply -f custom-volume-pv.yaml
