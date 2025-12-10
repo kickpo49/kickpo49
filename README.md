@@ -1,4 +1,4 @@
-# 안녕하세요! 👋 QA Team Lead & Cloud / DevOps Engineer 정성훈입니다.
+# 안녕하세요! 👋 QA Team Lead & Cloud / DevOps Engineer 입니다.
 
 **QA · Cloud · DevOps · BigData · AI** 기반의  **실무형 엔지니어**로,  
 단순 테스트를 넘어 **인프라 · 자동화 · 성능 · 운영 안정성까지 책임지는 QA & Cloud 엔지니어**입니다.
