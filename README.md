@@ -70,22 +70,14 @@
 
 - 정보처리기사
 - SQLD
+- DASP
 - ISTQB CTFL
 - CSTS
 - Linux Master 2급
-- CKAD / CKA (준비 중)
+- CKA / CKAD
 
 ---
 
-## 🚀 개인 프로젝트
-
-### 🐔 Blind Chicken Market
-- AWS EC2 + Docker + Caddy + PostgreSQL + Redis
-- GitHub Actions + CronJob 자동 배포
-- HTTPS 자동 인증서 발급 (Let's Encrypt)
-- 도메인: Route53 연동
-
----
 
 ## 🎯 커리어 목표
 
