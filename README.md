@@ -12,7 +12,7 @@
 
 ## 🔥 핵심 요약
 
-- HyperData(BigData/AI), FORTE ERP, CLAS Cloud, CRM, 공공기관, 금융권 QA 총괄
+- HyperData(BigData/AI), FORTE ERP, CLAS Cloud, CRM, 공공기관 QA 총괄
 - TPC-H 성능 테스트 · JMeter 성능 검증 · 마이그레이션 자동화 검증
 - Kubernetes · Docker · AWS 기반 인프라 환경 품질 검증
 - QA 프로세스 개선 · 팀 교육 · 가이드 문서화 담당
